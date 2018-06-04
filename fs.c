@@ -448,6 +448,27 @@ itrunc(struct inode *ip)
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
   }
+  
+  if(ip->addrs[NDIRECT+1]){
+    bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
+    a = (uint*)bp->data;
+    brelse(bp);
+    uint* second_level;
+    for(j=0; j<NINDIRECT; ++j){
+      if(a[j]){
+        bp = bread(ip->dev, a[j]);
+        second_level = (uint*)(bp->data);
+        for(i=0; i<NINDIRECT; ++i){
+          if(second_level[i]){
+            bfree(ip->dev, second_level[i]);
+          }
+        }
+        brelse(bp);
+        bfree(ip->dev, a[j]);
+      }
+    }
+    bfree(ip->dev, ip->addrs[NDIRECT+1]);
+  }
 
   ip->size = 0;
   iupdate(ip);
