@@ -25,7 +25,7 @@ struct superblock {
 #define PADDING_SIZE 15
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define NDINDIRECT NINDIRECT*NINDIRECT
-#define MAXFILE (NDIRECT + NINDIRECT)
+#define MAXFILE (NDIRECT + NINDIRECT + NDINDIRECT)
 #define PADDING uint padding[PADDING_SIZE];
 
 // On-disk inode structure
