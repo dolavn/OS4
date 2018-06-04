@@ -93,8 +93,16 @@ sys_write(void)
 int
 sys_symlink(void)
 {
-  cprintf("symlinkaaa\n");
-  return 0;
+  const char* oldp; 
+  const char* newp;
+  
+  if(argptr(0, (char**)(&oldp), sizeof(char*)) < 0){
+    return -1;
+  }
+  if(argptr(1, (char**)(&newp), sizeof(char*)) < 0){
+    return -1;
+  }
+  return create_symlink(oldp,newp);
 }
 
 int

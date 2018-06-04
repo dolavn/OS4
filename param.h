@@ -11,3 +11,4 @@
 #define LOGSIZE      (MAXOPBLOCKS*3)  // max data blocks in on-disk log
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       (1<<15)  // size of file system in blocks
+#define MAX_DEREFERENCE     31 // maximum number of soft link derferences

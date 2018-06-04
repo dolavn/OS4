@@ -9,7 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
-
+typedef uint size_t;
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -52,6 +52,8 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, char*, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, char*, uint, uint);
+int             create_symlink(const char*, const char*);
+int             readlink(const char*, char*, size_t);
 
 // ide.c
 void            ideinit(void);

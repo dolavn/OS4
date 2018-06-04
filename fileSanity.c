@@ -12,8 +12,10 @@
 char buffer[BLOCK_SIZE];
 
 int main(int argc, char** argv){
+    /*int sym = symlink("eyalo","symlink");
+    printf(2,"sym:%d\n",sym);
+    exit();*/
     int fd = open("testFile",O_CREATE | O_RDWR);
-    symlink("a","a");
     printf(2,"Writing to direct blocks\n");
     for(int i=0;i<DIRECT_BLOCKS;++i){
         if(write(fd,buffer,BLOCK_SIZE)<0){

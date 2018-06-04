@@ -617,6 +617,44 @@ dirlink(struct inode *dp, char *name, uint inum)
   return 0;
 }
 
+int
+create_symlink(const char* old_path, const char* new_path){
+  cprintf("old:%s\nnew:%s\n",old_path,new_path);
+  struct inode* dp;
+  char name[DIRSIZ];
+  if((dp = nameiparent((char*)new_path, name)) == 0){
+    return 0;
+  }
+  begin_op();
+  ilock(dp);
+  struct inode* ip;
+  uint off;
+  if((ip = dirlookup(dp, name, &off)) != 0){
+    iunlockput(dp);
+    end_op();
+    return -1;
+  }
+  if((ip = ialloc(dp->dev, T_SLINK)) == 0)
+    panic("create: ialloc");
+  ilock(ip);
+  ip->major = 0;
+  ip->minor = 0;
+  ip->nlink = 1;
+  iupdate(ip);
+  if(dirlink(dp, name, ip->inum) < 0)
+    panic("create: dirlink");
+
+  iunlockput(dp);
+  iunlock(ip);
+  end_op();
+  return 0;
+}
+
+int
+readlink(const char* pathname, char* buf, size_t bufsize){
+  return 0;
+}
+
 //PAGEBREAK!
 // Paths
 
@@ -661,6 +699,7 @@ skipelem(char *path, char *name)
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
+
 static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
