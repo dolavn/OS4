@@ -9,8 +9,10 @@ main(int argc, char *argv[])
     printf(2, "Usage: ln old new OR ls -s old new\n");
     exit();
   }
-  if(argv[1] != "-s" && link(argv[1], argv[2]) < 0) {
-    printf(2, "link %s %s: failed\n", argv[1], argv[2]);
+  if (argv[1] != "-s") {
+    if (link(argv[1], argv[2]) < 0) {
+      printf(2, "link %s %s: failed\n", argv[1], argv[2]);
+    }
     exit();
   }
   // Symbolic link
