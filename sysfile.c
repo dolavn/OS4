@@ -91,6 +91,20 @@ sys_write(void)
 }
 
 int
+sys_symlink(void)
+{
+  cprintf("symlinkaaa\n");
+  return 0;
+}
+
+int
+sys_readlink(void)
+{
+  cprintf("readlink\n");
+  return 0;
+}
+
+int
 sys_close(void)
 {
   int fd;
