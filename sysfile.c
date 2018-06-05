@@ -93,9 +93,9 @@ sys_write(void)
 int
 sys_symlink(void)
 {
-  const char* oldp; 
+  const char* oldp;
   const char* newp;
-  
+
   if(argptr(0, (char**)(&oldp), sizeof(char*)) < 0){
     return -1;
   }
@@ -111,7 +111,7 @@ sys_readlink(void)
   const char* pathname;
   char* buf;
   size_t bufsize;
-  
+
   if(argptr(0, (char**)(&pathname), sizeof(char*)) < 0){
     return -1;
   }
@@ -324,6 +324,7 @@ sys_open(void)
   int fd, omode;
   struct file *f;
   struct inode *ip;
+  int dereference = MAX_DEREFERENCE;
 
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
@@ -342,10 +343,28 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
-    if(ip->type == T_DIR && omode != O_RDONLY){
+    if(ip->type == T_DIR && omode != O_RDONLY && omode != O_IGN_SLINK){
       iunlockput(ip);
       end_op();
       return -1;
+    }
+  }
+  if (!(omode & O_IGN_SLINK)) {
+    while(ip->type == T_SLINK){
+      // cprintf("open slink\n");
+      if(!dereference--){
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+      getlinktarget(ip, path, ip->size);
+      iunlockput(ip);
+      ip = namei(path);
+      if(!ip){
+        end_op();
+        return -1;
+      }
+      ilock(ip);
     }
   }
 
@@ -409,7 +428,7 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
   struct proc *curproc = myproc();
-  
+
   begin_op();
   if(argstr(0, &path) < 0 || (ip = namei(path)) == 0){
     end_op();
