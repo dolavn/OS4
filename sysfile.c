@@ -350,8 +350,7 @@ sys_open(void)
     }
   }
   if (!(omode & O_IGN_SLINK)) {
-    while(ip->type == T_SLINK){
-      // cprintf("open slink\n");
+    while(ip->type == T_SLINK) {
       if(!dereference--){
         iunlockput(ip);
         end_op();
