@@ -761,3 +761,4 @@ readlink(const char* pathname, char* buf, size_t bufsize){
   readi(ip, buf, 0, bufsize);
   return 0;
 }
+
