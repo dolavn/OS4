@@ -619,7 +619,6 @@ dirlink(struct inode *dp, char *name, uint inum)
 
 int
 create_symlink(const char* old_path, const char* new_path){
-  cprintf("old:%s\nnew:%s\n",old_path,new_path);
   struct inode* dp;
   char name[DIRSIZ];
   if((dp = nameiparent((char*)new_path, name)) == 0){
@@ -641,9 +640,9 @@ create_symlink(const char* old_path, const char* new_path){
   ip->minor = 0;
   ip->nlink = 1;
   iupdate(ip);
+  writei(ip, (char*)old_path, 0, strlen(old_path));
   if(dirlink(dp, name, ip->inum) < 0)
     panic("create: dirlink");
-
   iunlockput(dp);
   iunlock(ip);
   end_op();
