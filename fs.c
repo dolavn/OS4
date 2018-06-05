@@ -622,7 +622,7 @@ create_symlink(const char* old_path, const char* new_path){
   struct inode* dp;
   char name[DIRSIZ];
   if((dp = nameiparent((char*)new_path, name)) == 0){
-    return 0;
+    return -1;
   }
   ilock(dp);
   struct inode* ip;
@@ -707,9 +707,9 @@ static struct inode*
 namex(char *path, int nameiparent, char *name, int ref_count)
 {
   struct inode *ip, *next;
-  uint dereferences = ref_count;
-  char buffer[100];
-  char namei[DIRSIZ];
+  //uint dereferences = ref_count;
+  //char buffer[100];
+  //char namei[DIRSIZ];
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
@@ -717,6 +717,10 @@ namex(char *path, int nameiparent, char *name, int ref_count)
   
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
+    if(!(ip=dereferencelink(ip))){
+      return 0;
+    }
+    /*
     if(ip->type == T_SLINK){
       cprintf("symbolic link\n");
       if (dereferences--) {
@@ -735,7 +739,7 @@ namex(char *path, int nameiparent, char *name, int ref_count)
         cprintf("too many dereferences\n");
         return 0;
       }
-    }
+    }*/
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;
