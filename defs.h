@@ -56,6 +56,7 @@ int             create_symlink(const char*, const char*);
 int             readlink(const char*, char*, size_t);
 int             getlinktarget(struct inode*, char*, size_t);
 int             issymlink(struct inode*);
+struct inode*   dereferencelink(struct inode*);
 
 // ide.c
 void            ideinit(void);

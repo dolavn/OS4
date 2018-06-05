@@ -416,21 +416,9 @@ sys_chdir(void)
     return -1;
   }
   ilock(ip);
-  int dereference = MAX_DEREFERENCE;
-  while(ip->type == T_SLINK){
-    if(!dereference--){
-      iunlockput(ip);
-      end_op();
-      return -1;
-    }
-    getlinktarget(ip, path, ip->size);
-    iunlockput(ip);
-    ip = namei(path);
-    if(!ip){
-      end_op();
-      return -1;
-    }
-    ilock(ip);
+  if(!(ip=dereferencelink(ip))){
+    end_op();
+    return -1;
   }
   if(ip->type != T_DIR){
     iunlockput(ip);
