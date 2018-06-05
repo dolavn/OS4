@@ -108,8 +108,20 @@ sys_symlink(void)
 int
 sys_readlink(void)
 {
-  cprintf("readlink\n");
-  return 0;
+  const char* pathname;
+  char* buf;
+  size_t bufsize;
+  
+  if(argptr(0, (char**)(&pathname), sizeof(char*)) < 0){
+    return -1;
+  }
+  if(argptr(1, (char**)(&buf), sizeof(char*)) < 0){
+    return -1;
+  }
+  if(argint(2, (int*)(&bufsize)) < 0){
+    return -1;
+  }
+  return readlink(pathname, buf, bufsize);
 }
 
 int

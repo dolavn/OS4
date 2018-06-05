@@ -624,15 +624,14 @@ create_symlink(const char* old_path, const char* new_path){
   if((dp = nameiparent((char*)new_path, name)) == 0){
     return 0;
   }
-  begin_op();
   ilock(dp);
   struct inode* ip;
   uint off;
   if((ip = dirlookup(dp, name, &off)) != 0){
     iunlockput(dp);
-    end_op();
     return -1;
   }
+  begin_op();
   if((ip = ialloc(dp->dev, T_SLINK)) == 0)
     panic("create: ialloc");
   ilock(ip);
@@ -646,11 +645,6 @@ create_symlink(const char* old_path, const char* new_path){
   iunlockput(dp);
   iunlock(ip);
   end_op();
-  return 0;
-}
-
-int
-readlink(const char* pathname, char* buf, size_t bufsize){
   return 0;
 }
 
@@ -711,6 +705,10 @@ namex(char *path, int nameiparent, char *name)
 
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
+    if(ip->type == T_SLINK){
+      cprintf("symbolic link\n");
+      return 0;
+    }
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;
@@ -745,4 +743,21 @@ struct inode*
 nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
+}
+
+int
+readlink(const char* pathname, char* buf, size_t bufsize){
+  char name[DIRSIZ];
+  struct inode* ip = namex((char*)(pathname), 0, name);
+  if(!ip){
+    return -1;
+  }
+  ilock(ip);
+  if(ip->type != T_SLINK){
+    iunlock(ip);
+    return -1;
+  }
+  iunlock(ip);
+  readi(ip, buf, 0, bufsize);
+  return 0;
 }
