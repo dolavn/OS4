@@ -5,6 +5,9 @@
 int
 main(int argc, char *argv[])
 {
+  char* oldp;
+  char* newp;
+
   if(argc < 3 || argc > 4){
     printf(2, "Usage: ln old new OR ls -s old new\n");
     exit();
@@ -16,6 +19,11 @@ main(int argc, char *argv[])
     exit();
   }
   // Symbolic link
-  
+  oldp = argv[2];
+  newp = argv[3];
+  if (symlink(oldp, newp) != 0) {
+    printf(2, "symlink %s %s: failed\n", oldp, newp);
+  }
+
   exit();
 }
