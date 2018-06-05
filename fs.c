@@ -796,4 +796,25 @@ issymlink(struct inode* ip){
   return ans;
 }
 
+struct inode*
+dereferencelink(struct inode* ip){
+  struct inode* ans = ip;
+  int dereference = MAX_DEREFERENCE;
+  char buffer[100];
+  while(ans->type == T_SLINK){
+    if(!dereference--){
+      iunlockput(ans);
+      return 0;
+    }
+    getlinktarget(ans, buffer, ans->size);
+    iunlockput(ans);
+    ans = namei(buffer);
+    if(!ans){
+      return 0;
+    }
+    ilock(ans);
+  }
+  return ans;
+}
+
 

@@ -27,6 +27,11 @@ exec(char *path, char **argv)
     return -1;
   }
   ilock(ip);
+  if(!(ip = dereferencelink(ip))){
+    end_op();
+    cprintf("exec: fail\n");
+    return -1;
+  }
   pgdir = 0;
 
   // Check ELF header
