@@ -639,7 +639,7 @@ create_symlink(const char* old_path, const char* new_path){
   ip->minor = 0;
   ip->nlink = 1;
   iupdate(ip);
-  writei(ip, (char*)old_path, 0, strlen(old_path));
+  writei(ip, (char*)old_path, 0, strlen(old_path)+1);
   if(dirlink(dp, name, ip->inum) < 0)
     panic("create: dirlink");
   iunlockput(dp);
@@ -688,31 +688,48 @@ skipelem(char *path, char *name)
   return path;
 }
 
+int
+getlinktarget(struct inode* ip, char* buf, size_t bufsize){
+  if(ip->type != T_SLINK){
+    iunlock(ip);
+    return -1;
+  }
+  readi(ip, buf, 0, bufsize);
+  return 0;  
+}
+
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
 
 static struct inode*
-namex(char *path, int nameiparent, char *name)
+namex(char *path, int nameiparent, char *name, int ref_count)
 {
   struct inode *ip, *next;
-  uint dereferences = MAX_DEREFERENCE;
-
+  uint dereferences = ref_count;
+  char buffer[100];
+  char namei[DIRSIZ];
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(myproc()->cwd);
-
+  
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
     if(ip->type == T_SLINK){
       cprintf("symbolic link\n");
       if (dereferences--) {
-        if (readlink(path, path, ip->size) != 0) {
+        if (getlinktarget(ip, buffer, ip->size) != 0) { //ip = target
           cprintf("readlink error\n");
           return 0;
         }
+        iunlockput(ip);
+        if (!(ip = namex(buffer, 0, namei, dereferences))){
+          cprintf("bad symlink\n");
+          return 0;
+        }
+        ilock(ip);
       }
       else {
         cprintf("too many dereferences\n");
@@ -747,29 +764,36 @@ struct inode*
 namei(char *path)
 {
   char name[DIRSIZ];
-  return namex(path, 0, name);
+  return namex(path, 0, name, MAX_DEREFERENCE);
 }
 
 struct inode*
 nameiparent(char *path, char *name)
 {
-  return namex(path, 1, name);
+  return namex(path, 1, name, MAX_DEREFERENCE);
 }
 
 int
 readlink(const char* pathname, char* buf, size_t bufsize){
   char name[DIRSIZ];
-  struct inode* ip = namex((char*)(pathname), 0, name);
+  int ans;
+  struct inode* ip = namex((char*)(pathname), 0, name, MAX_DEREFERENCE);
   if(!ip){
     return -1;
   }
   ilock(ip);
-  if(ip->type != T_SLINK){
-    iunlock(ip);
-    return -1;
-  }
+  ans = getlinktarget(ip, buf, bufsize);
   iunlock(ip);
-  readi(ip, buf, 0, bufsize);
-  return 0;
+  return ans;
 }
+
+int
+issymlink(struct inode* ip){
+  int ans;
+  ilock(ip);
+  ans = ip->type == T_SLINK;
+  iunlock(ip);
+  return ans;
+}
+
 
