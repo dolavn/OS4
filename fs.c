@@ -25,7 +25,7 @@
 static void itrunc(struct inode*);
 // there should be one superblock per disk device, but we run with
 // only one device
-struct superblock sb; 
+struct superblock sb;
 
 // Read the super block.
 void
@@ -173,7 +173,7 @@ void
 iinit(int dev)
 {
   int i = 0;
-  
+
   initlock(&icache.lock, "icache");
   for(i = 0; i < NINODE; i++) {
     initsleeplock(&icache.inode[i].lock, "inode");
@@ -396,7 +396,7 @@ bmap(struct inode *ip, uint bn)
     return addr;
   }
   bn -= NINDIRECT;
-  
+
   if(bn < NDINDIRECT){
     if((addr = ip->addrs[NDIRECT+1]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
@@ -448,7 +448,7 @@ itrunc(struct inode *ip)
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
   }
-  
+
   if(ip->addrs[NDIRECT+1]){
     bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
     a = (uint*)bp->data;
@@ -697,6 +697,7 @@ static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
+  uint dereferences = MAX_DEREFERENCE;
 
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
@@ -707,7 +708,16 @@ namex(char *path, int nameiparent, char *name)
     ilock(ip);
     if(ip->type == T_SLINK){
       cprintf("symbolic link\n");
-      return 0;
+      if (dereferences--) {
+        if (readlink(path, path, ip->size) != 0) {
+          cprintf("readlink error\n");
+          return 0;
+        }
+      }
+      else {
+        cprintf("too many dereferences\n");
+        return 0;
+      }
     }
     if(ip->type != T_DIR){
       iunlockput(ip);
@@ -725,6 +735,7 @@ namex(char *path, int nameiparent, char *name)
     iunlockput(ip);
     ip = next;
   }
+
   if(nameiparent){
     iput(ip);
     return 0;
