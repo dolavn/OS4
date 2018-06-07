@@ -13,9 +13,10 @@ char buffer[BLOCK_SIZE];
 
 int main(int argc, char** argv){
     char v[10];
-    ftag(0,"aaa","aa");
-    funtag(0,"aaa");
-    gettag(0,"aaa",v);
+    int b = ftag(0,"aaa","aa");
+    printf(2,"%d\n",b);
+    //funtag(0,"aaa");
+    //gettag(0,"aaa",v);
     printf(2,"%s\n",v);
     exit();
     int fd = open("testFile",O_CREATE | O_RDWR);

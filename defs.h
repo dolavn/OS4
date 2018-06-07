@@ -63,7 +63,8 @@ int             gettag(int,const char*,char*);
 int             set_tag(struct inode*,const char*,const char*);
 int             get_tag(struct inode*,const char*);
 int             remove_tag(struct inode*,const char*);
-int             defragment_tags(struct inode*);
+int             defragment_tags(struct buf*);
+int             look_for(struct buf*,const char*,int,int,int);
 
 // ide.c
 void            ideinit(void);

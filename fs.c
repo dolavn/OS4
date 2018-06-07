@@ -826,6 +826,26 @@ dereferencelink(struct inode* ip){
 
 int
 ftag(int fd,const char* key, const char* value){
+  struct buf b;
+  for(int i=0;i<BSIZE;++i){
+    b.data[i] = 0;
+  }
+  b.data[0]='h';b.data[1]='e';b.data[2]='l';b.data[3]='l';b.data[4]='o';b.data[5]=0;
+  b.data[6]=0;b.data[7]=0;b.data[8]=0;b.data[9]=0;b.data[10]='w';
+  b.data[11]='o';b.data[12]='r';b.data[13]='l';b.data[14]='d';b.data[15]=0;
+  b.data[16]='n';b.data[17]='a';b.data[18]='m';b.data[19]='e';b.data[20]=0;
+  b.data[21]='e';b.data[22]='y';b.data[23]='a';b.data[24]='l';b.data[25]=0;
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b.data[i]);
+  }
+  cprintf("\n");
+  int offset = look_for(&b,"\0\0",2,0,0);
+  cprintf("offset:%d\n",offset);
+  defragment_tags(&b);
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b.data[i]);
+  }
+  cprintf("\n");
   return 0;
 }
 
@@ -837,6 +857,40 @@ funtag(int fd,const char* key){
 int
 gettag(int fd,const char* key,char* buf){
   return 0;
+}
+
+int
+defragment_tags(struct buf* bp){
+  unsigned char* data = bp->data;
+  int i=0;
+  while(i<BSIZE-1){
+    if(!data[i] && !data[i+1]){
+      for(int j=i+1;j<BSIZE-1;++j){
+        if(data[j]){
+          for(int k=j;k<BSIZE-1;++k){
+            data[k-j+i+1] = data[k];
+          }
+        }
+        return 1;
+      }
+    }
+    i=i+1;
+  }
+  return 0;
+}
+
+int
+look_for(struct buf* bp,const char* str,int pattern_len,int look_from,int look_for_key){
+  int in_key=1;
+  for(int i=look_from;i<BSIZE-pattern_len;++i){
+    char equal=1;
+    if(!bp->data[i]){in_key=1-in_key;}
+    for(int j=0;j<pattern_len && equal;++j){
+      equal = bp->data[i+j] == str[j];
+    }
+    if(equal && ((look_for_key && in_key) || !look_for_key)){return i;}
+  }
+  return -1;
 }
 
 
