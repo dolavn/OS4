@@ -154,7 +154,7 @@ sys_funtag(void)
   if(argptr(1, (char**)(&key), sizeof(char*)) < 0){
     return -1;
   }
-  return 0;
+  return funtag(fd,key);
 }
 
 int
@@ -172,7 +172,7 @@ sys_gettag(void)
   if(argptr(2, (char**)(&buf), sizeof(char*)) < 0){
     return -1;
   }
-  return 0;
+  return gettag(fd,key,buf);
 }
 
 int

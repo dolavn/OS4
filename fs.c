@@ -698,7 +698,7 @@ getlinktarget(struct inode* ip, char* buf, size_t bufsize){
     return -1;
   }
   readi(ip, buf, 0, bufsize);
-  return 0;  
+  return 0;
 }
 
 // Look up and return the inode for a path name.
@@ -717,7 +717,7 @@ namex(char *path, int nameiparent, char *name, int ref_count)
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(myproc()->cwd);
-  
+
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
     if(!(ip=dereferencelink(ip))){
@@ -826,54 +826,56 @@ dereferencelink(struct inode* ip){
 
 int
 ftag(int fd,const char* key, const char* value){
-  struct buf b;
-  for(int i=0;i<BSIZE;++i){
-    b.data[i] = 0;
-  }
-  b.data[0]='h';b.data[1]='e';b.data[2]='l';b.data[3]='l';b.data[4]='o';b.data[5]=0;
-  b.data[6]=0;b.data[7]=0;b.data[8]=0;b.data[9]=0;b.data[10]='w';
-  b.data[11]='o';b.data[12]='r';b.data[13]='l';b.data[14]='d';b.data[15]=0;
-  b.data[16]='n';b.data[17]='a';b.data[18]='m';b.data[19]='e';b.data[20]=0;
-  b.data[21]='e';b.data[22]='y';b.data[23]='a';b.data[24]='l';b.data[25]=0;
-  for(int i=0;i<BSIZE;++i){
-    cprintf("%d ",b.data[i]);
-  }
-  cprintf("\n");
-  int offset = look_for(&b,"\0\0",2,0,0);
-  cprintf("offset:%d\n",offset);
-  defragment_tags(&b);
-  for(int i=0;i<BSIZE;++i){
-    cprintf("%d ",b.data[i]);
-  }
-  cprintf("\n");
-  return 0;
+  struct inode* ip = get_inode_from_fd(fd);
+  return set_tag(ip, key, value);
 }
 
 int
 funtag(int fd,const char* key){
+  struct inode* ip = get_inode_from_fd(fd);
+  struct buf* b = bread(ip->dev, ip->tag_block);
+  remove_tag(b, key);
+  defragment_tags(b);
+  cprintf("untag block:\n");
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b->data[i]);
+  }
+  cprintf("\n");  
+  brelse(b);
   return 0;
 }
 
 int
 gettag(int fd,const char* key,char* buf){
+  struct inode* ip = get_inode_from_fd(fd);
+  struct buf* b = bread(ip->dev, ip->tag_block);
+  int offset = look_for(b,key,strlen(key)+1,0,1);
+  if(offset==-1){brelse(b);return -1;}
+  offset = offset + strlen(key) + 1;
+  int value_len = strlen((char*)(b->data+offset));
+  memmove(buf,b->data+offset,value_len);
+  brelse(b);
   return 0;
 }
 
+//should handle in tag
 int
 defragment_tags(struct buf* bp){
   unsigned char* data = bp->data;
   int i=0;
-  while(i<BSIZE-1){
-    if(!data[i] && !data[i+1]){
-      for(int j=i+1;j<BSIZE-1;++j){
+  int in_key=1;
+  while(i<BSIZE-2){
+    if(!data[i] && !data[i+1] && !data[i+2]){
+      for(int j=i+1;j<BSIZE;++j){
         if(data[j]){
-          for(int k=j;k<BSIZE-1;++k){
-            data[k-j+i+1] = data[k];
+          for(int k=j;k<BSIZE;++k){
+            data[k-j+i+(i==0?0:1)] = data[k];
           }
+          return 1;
         }
-        return 1;
       }
     }
+    if(!data[i]){in_key=1-in_key;}
     i=i+1;
   }
   return 0;
@@ -884,13 +886,77 @@ look_for(struct buf* bp,const char* str,int pattern_len,int look_from,int look_f
   int in_key=1;
   for(int i=look_from;i<BSIZE-pattern_len;++i){
     char equal=1;
-    if(!bp->data[i]){in_key=1-in_key;}
     for(int j=0;j<pattern_len && equal;++j){
       equal = bp->data[i+j] == str[j];
     }
-    if(equal && ((look_for_key && in_key) || !look_for_key)){return i;}
+    if(equal && (look_for_key == in_key)){return i;}
+    if(!bp->data[i]){in_key=1-in_key;}
   }
   return -1;
 }
 
+int
+set_tag(struct inode* in, const char* key, const char* value){
+  struct buf* b;
+  int offset;
+  char* end_delimeter = "\0\0";
+  char buf_copy[BSIZE];
+  b = bread(in->dev, in->tag_block); //b is locked
+  memmove(buf_copy,b->data,BSIZE);
+  remove_tag(b, key);
+  defragment_tags(b);
+  offset = look_for(b, end_delimeter, 2, 0, 0);
+  offset = offset==1?0:offset+1;
+  cprintf("offset:%d\n",offset);
+  if((offset = insert_to_data(key, b, offset))<0){goto error;}
+  if((offset = insert_to_data(value, b, offset))<0){goto error;}
+  if((offset = insert_to_data(end_delimeter, b, offset))<0){goto error;}
+  cprintf("set tag block:\n");
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b->data[i]);
+  }
+  cprintf("\n");
+  brelse(b);
+  return 0;
+error:
+  memmove(b->data,buf_copy,BSIZE);
+  brelse(b);
+  return -1;
+}
+
+int
+insert_to_data(const char* str, struct buf* b, uint off) {  // invariant -> b is locked
+  uint i, len = strlen(str);
+  if (off + len > BSIZE) {
+    return -1;
+  }
+  for (i = 0; i < len; i++) {
+    *(b->data + off + i) = str[i];
+  }
+  *(b->data + off + i) = '\0';
+
+  return off + len + 1;
+}
+
+int
+remove_tag(struct buf* b, const char* tag) {  // invariant -> b is locked
+  uint offset_start, offset_end, pair_len, i;
+
+  offset_start = look_for(b, tag, strlen(tag)+1, 0, 1);
+  if(offset_start==-1){return -1;}
+  offset_end = look_for(b, "\0", 1, offset_start+strlen(tag)+1, 1);
+  pair_len = offset_end - offset_start;
+
+  for (i = 0; i < pair_len; i++) {
+    *(b->data + offset_start + i) = '\0';
+  }
+
+  return 0;
+}
+
+struct inode*
+get_inode_from_fd(int fd){
+  struct proc* p = myproc();
+  return p->ofile[fd]->ip;
+}
 
