@@ -698,7 +698,7 @@ getlinktarget(struct inode* ip, char* buf, size_t bufsize){
     return -1;
   }
   readi(ip, buf, 0, bufsize);
-  return 0;  
+  return 0;
 }
 
 // Look up and return the inode for a path name.
@@ -717,7 +717,7 @@ namex(char *path, int nameiparent, char *name, int ref_count)
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(myproc()->cwd);
-  
+
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
     if(!(ip=dereferencelink(ip))){
@@ -839,4 +839,53 @@ gettag(int fd,const char* key,char* buf){
   return 0;
 }
 
+int
+set_tag(struct inode* in, const char* key, const char* value){
+  struct buf* b;
+  uint offset;
+  char* end_delimeter = "\0\0";
 
+  b = bread(in->dev, in->tag_block); //b is locked
+  remove_tag(b, key);
+  defragment_tags(b);
+  offset = lookfor(b, end_delimeter, strlen(end_delimeter)+1, 0, 0);
+  offset = insert_to_data(key, b, offset);
+  offset = insert_to_data(value, b, offset);
+  offset = insert_to_data(end_delimeter, b, offset);
+
+  brelse(b);
+  return 0;
+}
+
+uint
+insert_to_data(const char* str, struct buf* b, uint off) {  // invariant -> b is locked
+  uint i, len = strlen(str);
+
+  if (off + len >= BSIZE) {
+    cprintf("tag_block overflow\n");
+  }
+  for (i = 0; i < len; i++) {
+    *(b->data + off + i) = str[i];
+  }
+  *(b->data + off + i) = '\0';
+
+  return off + len + 1;
+}
+
+int
+remove_tag(struct buf* b, const char* tag) {  // invariant -> b is locked
+  uint offset_start, offset_end, pair_len, i;
+
+  offset_start = lookfor(b, tag, strlen(tag)+1, 0, 1);
+  offset_end = lookfor(b, "\0", 1, offset_start, 0);
+  pair_len = offset_end - offset_start;
+
+  for (i = 0; i < pair_len; i++) {
+    *(b->data + offset_start + i) = '\0';
+  }
+
+  return 0;
+}
+
+// int             get_tag(struct inode*,const char*);
+// int             defragment_tags(struct inode*);

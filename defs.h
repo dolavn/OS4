@@ -64,6 +64,7 @@ int             set_tag(struct inode*,const char*,const char*);
 int             get_tag(struct inode*,const char*);
 int             remove_tag(struct inode*,const char*);
 int             defragment_tags(struct inode*);
+uint            insert_to_data(const char*, struct buf*, uint);
 
 // ide.c
 void            ideinit(void);
