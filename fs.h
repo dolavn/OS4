@@ -22,7 +22,7 @@ struct superblock {
 };
 
 #define NDIRECT 12
-#define PADDING_SIZE 15
+#define PADDING_SIZE 14
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define NDINDIRECT NINDIRECT*NINDIRECT
 #define MAXFILE (NDIRECT + NINDIRECT + NDINDIRECT)
@@ -36,6 +36,7 @@ struct dinode {
   short nlink;          // Number of links to inode in file system
   uint size;            // Size of file (bytes)
   uint addrs[NDIRECT+2];   // Data block addresses
+  uint tag_block;
   PADDING;
 };
 

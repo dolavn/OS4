@@ -204,6 +204,7 @@ ialloc(uint dev, short type)
     if(dip->type == 0){  // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
+      dip->tag_block = balloc(dev);
       log_write(bp);   // mark it allocated on the disk
       brelse(bp);
       return iget(dev, inum);
@@ -230,6 +231,7 @@ iupdate(struct inode *ip)
   dip->minor = ip->minor;
   dip->nlink = ip->nlink;
   dip->size = ip->size;
+  dip->tag_block = ip->tag_block;
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
   log_write(bp);
   brelse(bp);
@@ -303,6 +305,7 @@ ilock(struct inode *ip)
     ip->minor = dip->minor;
     ip->nlink = dip->nlink;
     ip->size = dip->size;
+    ip->tag_block = dip->tag_block;
     memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
     brelse(bp);
     ip->valid = 1;
@@ -469,7 +472,7 @@ itrunc(struct inode *ip)
     }
     bfree(ip->dev, ip->addrs[NDIRECT+1]);
   }
-
+  bfree(ip->dev, ip->tag_block);
   ip->size = 0;
   iupdate(ip);
 }
@@ -819,6 +822,21 @@ dereferencelink(struct inode* ip){
     ilock(ans);
   }
   return ans;
+}
+
+int
+ftag(int fd,const char* key, const char* value){
+  return 0;
+}
+
+int
+funtag(int fd,const char* key){
+  return 0;
+}
+
+int
+gettag(int fd,const char* key,char* buf){
+  return 0;
 }
 
 

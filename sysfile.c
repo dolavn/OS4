@@ -125,6 +125,56 @@ sys_readlink(void)
 }
 
 int
+sys_ftag(void)
+{
+  int fd;
+  const char* key;
+  const char* value;
+  if(argint(0, &fd) < 0){
+    return -1;
+  }
+  if(argptr(1, (char**)(&key), sizeof(char*)) < 0){
+    return -1;
+  }
+  if(argptr(2, (char**)(&value), sizeof(char*)) < 0){
+    return -1;
+  }
+  return 0;
+}
+
+int
+sys_funtag(void)
+{
+  int fd;
+  const char* key;
+  if(argint(0, &fd) < 0){
+    return -1;
+  }
+  if(argptr(1, (char**)(&key), sizeof(char*)) < 0){
+    return -1;
+  }
+  return 0;
+}
+
+int
+sys_gettag(void)
+{
+  int fd;
+  const char* key;
+  char* buf;
+  if(argint(0, &fd) < 0){
+    return -1;
+  }
+  if(argptr(1, (char**)(&key), sizeof(char*)) < 0){
+    return -1;
+  }
+  if(argptr(2, (char**)(&buf), sizeof(char*)) < 0){
+    return -1;
+  }
+  return 0;
+}
+
+int
 sys_close(void)
 {
   int fd;
@@ -324,7 +374,6 @@ sys_open(void)
   int fd, omode;
   struct file *f;
   struct inode *ip;
-  int dereference = MAX_DEREFERENCE;
 
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
@@ -350,20 +399,8 @@ sys_open(void)
     }
   }
   if (!(omode & O_IGN_SLINK)) {
-    while(ip->type == T_SLINK) {
-      if(!dereference--){
-        iunlockput(ip);
-        end_op();
-        return -1;
-      }
-      getlinktarget(ip, path, ip->size);
-      iunlockput(ip);
-      ip = namei(path);
-      if(!ip){
-        end_op();
-        return -1;
-      }
-      ilock(ip);
+    if(!(ip = dereferencelink(ip))){
+      return -1;
     }
   }
 

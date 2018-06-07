@@ -57,6 +57,9 @@ int             readlink(const char*, char*, size_t);
 int             getlinktarget(struct inode*, char*, size_t);
 int             issymlink(struct inode*);
 struct inode*   dereferencelink(struct inode*);
+int             ftag(int,const char*,const char*);
+int             funtag(int,const char*);
+int             gettag(int,const char*,char*);
 
 // ide.c
 void            ideinit(void);
