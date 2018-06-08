@@ -108,7 +108,7 @@ checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
     if (gettag(fd, sc->key, tval) < 0) {
       tagTest = 0;
     }
-    else if (strcmp(sc->value, "?") || strcmp(sc->value, tval)) tagTest = 1;
+    else if (strcmp(sc->value, "?")==0 || strcmp(sc->value, tval)==0) tagTest = 1;
     else tagTest = 0;
   }
   else tagTest = 1;

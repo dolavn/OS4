@@ -25,3 +25,4 @@
 #define SYS_ftag 24
 #define SYS_funtag 25
 #define SYS_gettag 26
+#define SYS_printtags 27

@@ -176,6 +176,17 @@ sys_gettag(void)
 }
 
 int
+sys_printtags(void)
+{
+  int fd;
+  if(argint(0, &fd) < 0){
+    return -1;
+  }
+  printtags(fd);
+  return 0;
+}
+
+int
 sys_close(void)
 {
   int fd;

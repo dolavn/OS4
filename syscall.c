@@ -108,6 +108,7 @@ extern int sys_readlink(void);
 extern int sys_ftag(void);
 extern int sys_funtag(void);
 extern int sys_gettag(void);
+extern int sys_printtags(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -136,6 +137,7 @@ static int (*syscalls[])(void) = {
 [SYS_ftag]    sys_ftag,
 [SYS_funtag]  sys_funtag,
 [SYS_gettag]  sys_gettag,
+[SYS_printtags] sys_printtags,
 };
 
 void

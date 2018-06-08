@@ -432,7 +432,6 @@ itrunc(struct inode *ip)
   int i, j;
   struct buf *bp;
   uint *a;
-
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
@@ -849,7 +848,19 @@ gettag(int fd,const char* key,char* buf){
   offset = offset + strlen(key) + 1;
   int value_len = strlen((char*)(b->data+offset));
   buf[0]=0;
-  memmove(buf,b->data+offset,value_len);
+  memmove(buf,b->data+offset,value_len+1);
+  brelse(b);
+  return 0;
+}
+
+int
+printtags(int fd){
+  struct inode* ip = get_inode_from_fd(fd);
+  struct buf* b = bread(ip->dev, ip->tag_block);
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b->data[i]);
+  }
+  cprintf("\n");
   brelse(b);
   return 0;
 }
