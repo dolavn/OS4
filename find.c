@@ -33,7 +33,7 @@ int main(int argc, char** argv){
     exit();
   }
   search(&search_crit);
-  //printf(2,"search criteria:\n%s\nfollow:%d\nname:%s\nsize:%d\ntype:%d\nkey:%s\nvalue:%s\n",search_crit.path,search_crit.follow,search_crit.name,search_crit.size,search_crit.type,search_crit.key,search_crit.value);
+  //printf(2,"search criteria:\n%s\nfollow:%d\nname:%s\nsize:%d\nsize_type:%d\ntype:%d\nkey:%s\nvalue:%s\n",search_crit.path,search_crit.follow,search_crit.name,search_crit.size,search_crit.size_type,search_crit.type,search_crit.key,search_crit.value);
   exit();
 }
 
@@ -168,7 +168,7 @@ get_search_criteria(int argc, char** argv){
       for(char* digit=num;*digit;digit++){
         if(!IS_DIGIT(*digit)){return -1;}
       }
-      search_crit.size = atoi(argv[i+1]+1);
+      search_crit.size = atoi(num);
       i = i + 1;
       continue;
     }
