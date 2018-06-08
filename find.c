@@ -55,6 +55,8 @@ rec_search(struct search_criteria* criteria, char* path){
   if(checkTests(criteria, &st, fd, 0)) {
     printf(2, "%s\n", path);
   }
+  return;
+
   switch(st.type) {
   case T_DIR:
     p = path+strlen(path);
@@ -76,24 +78,32 @@ rec_search(struct search_criteria* criteria, char* path){
 
 int
 checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
-  int nameTest, typeTest, sizeTest, tagTest;
+  int nameTest = 0, typeTest = 0, sizeTest = 0, tagTest = 0;
   char tval[TAGVAL_MAX_LEN];
 
-  nameTest = ((sc->name && sc->name == name) || !sc->name);
+  nameTest = ((sc->name && strcmp(sc->name, name)) || !sc->name);
   typeTest = ((sc->type &&  ((sc->type == 'd' && st->type == T_DIR) ||
                              (sc->type == 'f' && st->type == T_FILE) ||
                              (sc->type == 's' && st->type == T_SLINK))) ||
-                             !st->type);
+                            !sc->type);
+  sizeTest = ((sc->size && ((sc->size_type == EQUAL && sc->size == st->size) ||
+                            (sc->size_type == BIGGER_THAN && sc->size <= st->size) ||
+                            (sc->size_type == SMALLER_THAN && sc->size >= st->size))) ||
+                           !sc->size);
   if (sc->key) {
     if (gettag(fd, sc->key, tval) < 0) {
-     tagTest = 0;
+      tagTest = 0;
     }
-    else if (strcmp(sc->value, '?') || strcmp(sc->value, tval)) tagTest = 1;
+    else if (strcmp(sc->value, "?") || strcmp(sc->value, tval)) tagTest = 1;
     else tagTest = 0;
   }
-
+  else tagTest = 1;
+  
+  printf(2, "cname:\tt c:t\ts c:t\n%s\t%d:%d\t%d:%d\t\n", sc->name, sc->type, st->type, sc->size, st->size);
+  printf(2, "%d\t%d\t%d\t%d\t\n", nameTest, typeTest, sizeTest, tagTest);
   return nameTest && typeTest && sizeTest && tagTest;
 }
+
 
 void
 search(struct search_criteria* criteria) {
@@ -102,10 +112,8 @@ search(struct search_criteria* criteria) {
   rec_search(criteria,path);
 }
 
-
-
-
-int get_search_criteria(int argc, char** argv){
+int
+get_search_criteria(int argc, char** argv){
   if(argc<2){return -1;}
   search_crit.path = argv[1];
   search_crit.follow = 0;
