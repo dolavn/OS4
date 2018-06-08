@@ -37,10 +37,16 @@ int main(int argc, char** argv){
   key = argv[3];
   value = argc==4?"":argv[4];
   if(option==TAG){
-    ftag(fd,key,value);
+    if(ftag(fd, key, value)<0){
+      printf(2,"Couldn't add tag to file %s\n",argv[2]);
+      exit();
+    }
   }
   if(option==UNTAG){
-    funtag(fd,key);
+    if(funtag(fd,key)<0){
+      printf(2,"Couldn't remove tag from file %s\n",argv[2]);
+      exit();
+    }
   }
   if(option==READ_TAGS){
     printtags(fd);

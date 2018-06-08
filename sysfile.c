@@ -139,8 +139,7 @@ sys_ftag(void)
   if(argptr(2, (char**)(&value), sizeof(char*)) < 0){
     return -1;
   }
-  ftag(fd,key,value);
-  return 0;
+  return ftag(fd,key,value);
 }
 
 int
