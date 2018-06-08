@@ -66,7 +66,7 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
       return;
     }
   }
-  if(checkTests(criteria, &st, fd, name) || 1) {
+  if(checkTests(criteria, &st, fd, name)) {
     printf(2, "%s\n", path);
   }
   if(st.type==T_DIR){
@@ -98,11 +98,8 @@ checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
   int nameTest = 1, typeTest = 1, sizeTest = 1, tagTest = 1;
   char tval[TAGVAL_MAX_LEN];
 
-  nameTest = ((sc->name && strcmp(sc->name, name)) || !sc->name);
-  typeTest = ((sc->type &&  ((sc->type == 'd' && st->type == T_DIR) ||
-                             (sc->type == 'f' && st->type == T_FILE) ||
-                             (sc->type == 's' && st->type == T_SLINK))) ||
-                            !sc->type);
+  nameTest = ((sc->name && strcmp(sc->name, name)==0) || !sc->name);
+  typeTest = ((sc->type && (sc->type == st->type))    || !sc->type);
   sizeTest = ((sc->size && ((sc->size_type == EQUAL && sc->size == st->size) ||
                             (sc->size_type == BIGGER_THAN && sc->size <= st->size) ||
                             (sc->size_type == SMALLER_THAN && sc->size >= st->size))) ||
@@ -116,8 +113,8 @@ checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
   }
   else tagTest = 1;
 
-  printf(2, "cname:\tt c:t\ts c:t\n%s\t%d:%d\t%d:%d\t\n", sc->name, sc->type, st->type, sc->size, st->size);
-  printf(2, "%d\t%d\t%d\t%d\t\n", nameTest, typeTest, sizeTest, tagTest);
+  // printf(2, "cname:\tt c:t\ts c:t\n%s\t%d:%d\t%d:%d\t\n", sc->name, sc->type, st->type, sc->size, st->size);
+  // printf(2, "%d\t%d\t%d\t%d\t\n", nameTest, typeTest, sizeTest, tagTest);
   return nameTest && typeTest && sizeTest && tagTest;
 }
 
