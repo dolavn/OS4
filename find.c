@@ -4,11 +4,18 @@
 #include "fs.h"
 #include "fcntl.h"
 
+#define EQUAL 0
+#define BIGGER_THAN 1
+#define SMALLER_THAN -1
+#define NO_SIZE_TYPE 2
+#define IS_DIGIT(a)     (a>='0' && a<='9')
+
 struct search_criteria{
   char* path;
   char follow;
   char* name;
   int size;
+  char size_type;
   char type;
   char* key;
   char* value;
@@ -17,6 +24,7 @@ struct search_criteria{
 struct search_criteria search_crit;
 int get_search_criteria(int, char**);
 void search(struct search_criteria*);
+void rec_search(struct search_criteria*,char*);
 int checkTests(struct search_criteria*, struct stat*, int, char*);
 
 int main(int argc, char** argv){
@@ -24,17 +32,18 @@ int main(int argc, char** argv){
     printf(2, "Usage: find <path> [<options>] [<tests>]\n");
     exit();
   }
+  search(&search_crit);
   //printf(2,"search criteria:\n%s\nfollow:%d\nname:%s\nsize:%d\ntype:%d\nkey:%s\nvalue:%s\n",search_crit.path,search_crit.follow,search_crit.name,search_crit.size,search_crit.type,search_crit.key,search_crit.value);
   exit();
 }
 
 void
-search(struct search_criteria* criteria) {
+rec_search(struct search_criteria* criteria, char* path){
   int fd;
+  char* p;
   struct stat st;
-  char* path = criteria->path;
-
-  if((fd = open(path, criteria->follow?O_RDONLY:O_IGN_SLINK)) < 0) {
+  struct dirent de;
+  if((fd = open(path, O_IGN_SLINK)) < 0) {
     printf(2, "find: cannot open %s\n", path);
     return;
   }
@@ -43,41 +52,30 @@ search(struct search_criteria* criteria) {
     close(fd);
     return;
   }
-
+  if(checkTests(criteria, &st, fd, 0)) {
+    printf(2, "%s\n", path);
+  }
   switch(st.type) {
-  case T_FILE:
-    if(checkTests(criteria, &st)) {
-      printf(1, "%s\n", path);
+  case T_DIR:
+    p = path+strlen(path);
+    *p++ = '/';
+    while(read(fd, &de, sizeof(de)) == sizeof(de)){
+      if(de.inum == 0)
+        continue;
+      if(strcmp(de.name,".")==0 || strcmp(de.name,"..")==0){
+        continue;
+      }
+      memmove(p, de.name, DIRSIZ);
+      p[DIRSIZ] = 0;
+      rec_search(criteria, path);
     }
     break;
-
-  // case T_DIR:
-  //   if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
-  //     printf(1, "ls: path too long\n");
-  //     break;
-  //   }
-  //   strcpy(buf, path);
-  //   p = buf+strlen(buf);
-  //   *p++ = '/';
-  //   while(read(fd, &de, sizeof(de)) == sizeof(de)){
-  //     if(de.inum == 0)
-  //       continue;
-  //     memmove(p, de.name, DIRSIZ);
-  //     p[DIRSIZ] = 0;
-  //     if(stat(buf, &st) < 0){
-  //       printf(1, "ls: cannot stat %s\n", buf);
-  //       continue;
-  //     }
-  //     printf(1, "%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
-  //   }
-  //   break;
   }
-
   close(fd);
 }
 
-
-int checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
+int
+checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
   int nameTest, typeTest, sizeTest, tagTest;
   char tval[TAGVAL_MAX_LEN];
 
@@ -97,12 +95,23 @@ int checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) 
   return nameTest && typeTest && sizeTest && tagTest;
 }
 
+void
+search(struct search_criteria* criteria) {
+  char path[512];
+  memmove(path,criteria->path,strlen(criteria->path)+1);
+  rec_search(criteria,path);
+}
+
+
+
+
 int get_search_criteria(int argc, char** argv){
   if(argc<2){return -1;}
   search_crit.path = argv[1];
   search_crit.follow = 0;
   search_crit.name = 0;
   search_crit.size = 0;
+  search_crit.size_type = NO_SIZE_TYPE;
   search_crit.type = 0;
   search_crit.key = 0;
   search_crit.value = 0;
@@ -119,10 +128,25 @@ int get_search_criteria(int argc, char** argv){
     }
     if(strcmp(argv[i],"-size")==0){
       if(i==argc-1){return -1;}
-      if(argv[i+1][0]!='+' && argv[i+1][0]!='-'){
+      char* num = argv[i+1];
+      if(argv[i+1][0]=='+'){
+        num++;
+        search_crit.size_type = BIGGER_THAN;
+      }
+      if(argv[i+1][0]=='-'){
+        num++;
+        search_crit.size_type = SMALLER_THAN;
+      }
+      if(IS_DIGIT(argv[i+1][0])){
+        search_crit.size_type = EQUAL;
+      }
+      if(search_crit.size_type == NO_SIZE_TYPE){
         return -1;
       }
-      search_crit.size = (argv[i+1][0]=='+'?1:-1)*(atoi(argv[i+1]+1));
+      for(char* digit=num;*digit;digit++){
+        if(!IS_DIGIT(*digit)){return -1;}
+      }
+      search_crit.size = atoi(argv[i+1]+1);
       i = i + 1;
       continue;
     }
