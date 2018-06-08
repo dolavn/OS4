@@ -1,6 +1,7 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "fs.h"
 #include "fcntl.h"
 
 struct search_criteria{
@@ -16,7 +17,7 @@ struct search_criteria{
 struct search_criteria search_crit;
 int get_search_criteria(int, char**);
 void search(struct search_criteria*);
-int checkTests(struct search_criteria*, struct stat*);
+int checkTests(struct search_criteria*, struct stat*, int, char*);
 
 int main(int argc, char** argv){
   if(get_search_criteria(argc, argv) < 0) {
@@ -75,8 +76,25 @@ search(struct search_criteria* criteria) {
   close(fd);
 }
 
-int checkTests(struct search_criteria* sc, struct stat* st) {
-  /* code */
+
+int checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
+  int nameTest, typeTest, sizeTest, tagTest;
+  char tval[TAGVAL_MAX_LEN];
+
+  nameTest = ((sc->name && sc->name == name) || !sc->name);
+  typeTest = ((sc->type &&  ((sc->type == 'd' && st->type == T_DIR) ||
+                             (sc->type == 'f' && st->type == T_FILE) ||
+                             (sc->type == 's' && st->type == T_SLINK))) ||
+                             !st->type);
+  if (sc->key) {
+    if (gettag(fd, sc->key, tval) < 0) {
+     tagTest = 0;
+    }
+    else if (strcmp(sc->value, '?') || strcmp(sc->value, tval)) tagTest = 1;
+    else tagTest = 0;
+  }
+
+  return nameTest && typeTest && sizeTest && tagTest;
 }
 
 int get_search_criteria(int argc, char** argv){

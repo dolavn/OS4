@@ -59,3 +59,6 @@ struct dirent {
   ushort inum;
   char name[DIRSIZ];
 };
+
+#define TAGVAL_MAX_LEN 30
+#define TAGKEY_MAX_LEN 10
