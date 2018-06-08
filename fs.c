@@ -949,4 +949,3 @@ get_inode_from_fd(int fd){
   struct proc* p = myproc();
   return p->ofile[fd]->ip;
 }
-
