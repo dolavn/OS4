@@ -836,11 +836,6 @@ funtag(int fd,const char* key){
   struct buf* b = bread(ip->dev, ip->tag_block);
   remove_tag(b, key);
   defragment_tags(b);
-  cprintf("untag block:\n");
-  for(int i=0;i<BSIZE;++i){
-    cprintf("%d ",b->data[i]);
-  }
-  cprintf("\n");  
   brelse(b);
   return 0;
 }
@@ -853,12 +848,13 @@ gettag(int fd,const char* key,char* buf){
   if(offset==-1){brelse(b);return -1;}
   offset = offset + strlen(key) + 1;
   int value_len = strlen((char*)(b->data+offset));
+  buf[0]=0;
   memmove(buf,b->data+offset,value_len);
   brelse(b);
   return 0;
 }
 
-//should handle in tag
+
 int
 defragment_tags(struct buf* bp){
   unsigned char* data = bp->data;
@@ -869,7 +865,7 @@ defragment_tags(struct buf* bp){
       for(int j=i+1;j<BSIZE;++j){
         if(data[j]){
           for(int k=j;k<BSIZE;++k){
-            data[k-j+i+(i==0?0:1)] = data[k];
+            data[k-j+i+(i==0?0:1)+(i!=0&&in_key?1:0)] = data[k];
           }
           return 1;
         }
@@ -907,15 +903,9 @@ set_tag(struct inode* in, const char* key, const char* value){
   defragment_tags(b);
   offset = look_for(b, end_delimeter, 2, 0, 0);
   offset = offset==1?0:offset+1;
-  cprintf("offset:%d\n",offset);
   if((offset = insert_to_data(key, b, offset))<0){goto error;}
   if((offset = insert_to_data(value, b, offset))<0){goto error;}
   if((offset = insert_to_data(end_delimeter, b, offset))<0){goto error;}
-  cprintf("set tag block:\n");
-  for(int i=0;i<BSIZE;++i){
-    cprintf("%d ",b->data[i]);
-  }
-  cprintf("\n");
   brelse(b);
   return 0;
 error:
