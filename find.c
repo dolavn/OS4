@@ -24,7 +24,7 @@ struct search_criteria{
 struct search_criteria search_crit;
 int get_search_criteria(int, char**);
 void search(struct search_criteria*);
-void rec_search(struct search_criteria*,char*);
+void rec_search(struct search_criteria*,char*,char*);
 int checkTests(struct search_criteria*, struct stat*, int, char*);
 
 int main(int argc, char** argv){
@@ -38,9 +38,10 @@ int main(int argc, char** argv){
 }
 
 void
-rec_search(struct search_criteria* criteria, char* path){
+rec_search(struct search_criteria* criteria, char* path, char* name){
   int fd;
-  char* p;
+  char* p = path+strlen(path);
+  char* new_path = 0;
   struct stat st;
   struct dirent de;
   if((fd = open(path, O_IGN_SLINK)) < 0) {
@@ -52,13 +53,26 @@ rec_search(struct search_criteria* criteria, char* path){
     close(fd);
     return;
   }
-  if(checkTests(criteria, &st, fd, 0)) {
+  if(criteria->follow && st.type==T_SLINK){
+    new_path = (char*)(malloc(sizeof(char)*512));
+    readlink(path,new_path,512);
+    path = new_path;
+    p = path+strlen(path);
+    close(fd);
+    fd = open(path,O_IGN_SLINK);
+    if(fstat(fd, &st) < 0){
+      printf(2, "find: cannot stat %s\n", path);
+      close(fd);
+      return;
+    }
+  }
+  if(checkTests(criteria, &st, fd, name) || 1) {
     printf(2, "%s\n", path);
   }
-  switch(st.type) {
-  case T_DIR:
-    p = path+strlen(path);
-    *p++ = '/';
+  if(st.type==T_DIR){
+    if(*(p-1)!='/'){
+      *p++ = '/';
+    }
     while(read(fd, &de, sizeof(de)) == sizeof(de)){
       if(de.inum == 0)
         continue;
@@ -67,16 +81,21 @@ rec_search(struct search_criteria* criteria, char* path){
       }
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
-      rec_search(criteria, path);
+      rec_search(criteria, path, p);
     }
-    break;
+  }
+  if(new_path){
+    free(new_path);
+    path = 0;
+    p=0;
+    new_path = 0;
   }
   close(fd);
 }
 
 int
 checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
-  int nameTest, typeTest, sizeTest, tagTest;
+  int nameTest=1, typeTest=1, sizeTest=1, tagTest=1;
   char tval[TAGVAL_MAX_LEN];
 
   nameTest = ((sc->name && sc->name == name) || !sc->name);
@@ -88,7 +107,7 @@ checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
     if (gettag(fd, sc->key, tval) < 0) {
      tagTest = 0;
     }
-    else if (strcmp(sc->value, '?') || strcmp(sc->value, tval)) tagTest = 1;
+    else if (strcmp(sc->value, "?") || strcmp(sc->value, tval)) tagTest = 1;
     else tagTest = 0;
   }
 
@@ -99,7 +118,7 @@ void
 search(struct search_criteria* criteria) {
   char path[512];
   memmove(path,criteria->path,strlen(criteria->path)+1);
-  rec_search(criteria,path);
+  rec_search(criteria,path,path);
 }
 
 
