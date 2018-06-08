@@ -20,15 +20,19 @@ int main(int argc, char** argv){
     ftag(fd,"hobby","swimming");
     ftag(fd,"empty-entry","");
     ftag(fd,"os-partner","dolav");
-    b = gettag(fd,"name",v);
-    printf(2,"%s\n",v);
     funtag(fd,"name");
     funtag(fd,"hobby");
     funtag(fd,"os-partner");
     ftag(fd,"after-empty","hello");
     ftag(fd,"family-name","katz-talmono");
     funtag(fd,"after-empty");
-    printf(2,"%d\n",b);
+    ftag(fd,"hobby","swimming-guitar");
+    b = gettag(fd,"family-name",v);
+    printf(2,"%s\n%d\n",v,b);   
+    b = gettag(fd,"hobby",v);
+    printf(2,"%s\n%d\n",v,b); 
+    b = gettag(fd,"empty-entry",v);
+    printf(2,"%s\n%d\n",v,b); 
     exit();
     printf(2,"Writing to direct blocks\n");
     for(int i=0;i<DIRECT_BLOCKS;++i){
