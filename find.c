@@ -54,7 +54,6 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
     close(fd);
     return;
   }
-  printf(2,"hey\n");
   if(criteria->follow && st.type==T_SLINK){
     new_path = (char*)(malloc(sizeof(char)*512));
     readlink(path,new_path,512);
@@ -78,41 +77,41 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
     dir = (char**)(malloc(sizeof(char*)*2*((st.size/sizeof(de))+1)));
     curr = dir;
     while(read(fd, &de, sizeof(de)) == sizeof(de)){
-      if(de.inum == 0)
+      if(de.inum == 0){
         continue;
+      }
       memmove(p, de.name, DIRSIZ);
-      *curr = (char*)(malloc(sizeof(char)*(strlen(path)+1)));
-      printf(2,"malloc %d\n",curr-dir);
+      *curr = (char*)(malloc(sizeof(char)*(strlen(path)+DIRSIZ+2)));
       memmove(*curr,path,strlen(path)+1);
       curr++;
       *curr = *(curr-1)+(p-path);
-      printf(2,"%s\n",*curr);
       curr++;
       p[DIRSIZ] = 0;
     }
     close(fd);
     for(curr=dir;*curr;curr=curr+2){
-      printf(2,"curr:%d\n",curr-dir);
-      //printf(2,"p:%p\ncurr:%s\n",*curr,*curr);
-      if(strcmp(*(curr+1),".")==0 || strcmp(*(curr+1),"..")==0){
-        continue;
+      if(*(curr+1) && !(strcmp(*(curr+1),".")==0 || strcmp(*(curr+1),"..")==0)){
+        printf(2,"before rec %s\n", *(curr+1));
+        rec_search(criteria, *curr, *(curr+1));
+        printf(2,"after rec\n");
       }
-      rec_search(criteria, *curr, *(curr+1));
+      printf(2,"freeing %p\n",*curr);
       free(*curr);
       *curr = 0;
       *(curr+1) = 0;
+      printf(2,"freed\n");
     }
     free(dir);
     dir = 0;
+  }else{
+    close(fd);
   }
-  
   if(new_path){
     free(new_path);
     path = 0;
     p=0;
     new_path = 0;
   }
-  close(fd);
 }
 
 int
