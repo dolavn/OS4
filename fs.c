@@ -851,17 +851,19 @@ funtag(int fd,const char* key){
 int
 gettag(int fd,const char* key,char* buf){
   struct inode* ip = get_inode_from_fd(fd);
+  int ans=0;
   ilock(ip);
   struct buf* b = bread(ip->dev, ip->tag_block);
   int offset = look_for(b,key,strlen(key)+1,0,1);
-  if(offset==-1){brelse(b);return -1;}
+  if(offset==-1){ans=-1;goto ret;}
   offset = offset + strlen(key) + 1;
   int value_len = strlen((char*)(b->data+offset));
   buf[0]=0;
   memmove(buf,b->data+offset,value_len+1);
+ret:
   brelse(b);
   iunlock(ip);
-  return 0;
+  return ans;
 }
 
 int
