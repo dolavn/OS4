@@ -980,3 +980,10 @@ get_inode_from_fd(int fd){
   struct proc* p = myproc();
   return p->ofile[fd]->ip;
 }
+
+int
+setoffset(struct file* f, uint off) {
+  if (off > f->ip->size) return -1;
+  f->off = off;
+  return f->ip->size - off;
+}

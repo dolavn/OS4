@@ -60,7 +60,7 @@ argptr(int n, char **pp, int size)
 {
   int i;
   struct proc *curproc = myproc();
- 
+
   if(argint(n, &i) < 0)
     return -1;
   if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
@@ -109,6 +109,8 @@ extern int sys_ftag(void);
 extern int sys_funtag(void);
 extern int sys_gettag(void);
 extern int sys_printtags(void);
+extern int sys_setoffset(void);
+
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -138,6 +140,7 @@ static int (*syscalls[])(void) = {
 [SYS_funtag]  sys_funtag,
 [SYS_gettag]  sys_gettag,
 [SYS_printtags] sys_printtags,
+[SYS_setoffset] sys_setoffset,
 };
 
 void
