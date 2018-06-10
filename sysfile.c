@@ -193,7 +193,7 @@ sys_setoffset(void)
 
   if(argfd(0, 0, &f) < 0)
     return -1;
-  if(argint(1, &off) < 0){
+  if(argint(1, (int*)(&off)) < 0){
     return -1;
   }
   setoffset(f, off);

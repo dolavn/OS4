@@ -68,7 +68,7 @@ int             look_for(struct buf*,const char*,int,int,int);
 int             insert_to_data(const char*, struct buf*, uint);
 struct inode*   get_inode_from_fd(int);
 int             printtags(int);
-void            setoffset(struct file*, uint);
+int            setoffset(struct file*, uint);
 
 // ide.c
 void            ideinit(void);

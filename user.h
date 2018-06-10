@@ -29,7 +29,7 @@ int ftag(int,const char*,const char*);
 int funtag(int,const char*);
 int gettag(int,const char*,char*);
 int printtags(int);
-void setoffset(struct file*, uint);
+void setoffset(int, uint);
 
 // ulib.c
 int stat(char*, struct stat*);

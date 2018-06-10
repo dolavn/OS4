@@ -981,8 +981,9 @@ get_inode_from_fd(int fd){
   return p->ofile[fd]->ip;
 }
 
-void
+int
 setoffset(struct file* f, uint off) {
+  if (off > f->ip->size) return -1;
   f->off = off;
-  return;
+  return f->ip->size - off;
 }

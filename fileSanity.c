@@ -10,15 +10,29 @@
 
 
 char buffer[BLOCK_SIZE];
+char* aabbcc = "aabbcc";
 
 int main(int argc, char** argv){
     int fd = open("testFile",O_CREATE | O_RDWR);
+    if(write(fd,aabbcc,6)<0cat){
+        exit();
+    }
+    setoffset(fd,1);
+    if(write(fd,aabbcc,6)<0){
+        exit();
+    }
+    exit();
+
+
+
+
     printf(2,"Writing to direct blocks\n");
     for(int i=0;i<DIRECT_BLOCKS;++i){
         if(write(fd,buffer,BLOCK_SIZE)<0){
             exit();
         }
     }
+    setoffset(fd,0);
     printf(2,"Finished writing to direct blocks\n");
     printf(2,"Writing to indirect blocks\n");
     for(int i=0;i<INDIRECT_BLOCKS;++i){
@@ -26,6 +40,7 @@ int main(int argc, char** argv){
             exit();
         }
     }
+    setoffset(fd,0);
     printf(2,"Finished writing to indirect blocks\n");
     printf(2,"Writing to double indirect blocks\n");
     for(int i=0;i<DINDIRECT_BLOCKS;++i){
