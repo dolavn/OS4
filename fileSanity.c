@@ -14,7 +14,7 @@ char* aabbcc = "aabbcc";
 
 int main(int argc, char** argv){
     int fd = open("testFile",O_CREATE | O_RDWR);
-    if(write(fd,aabbcc,6)<0cat){
+    if(write(fd,aabbcc,6)<0){
         exit();
     }
     setoffset(fd,1);
