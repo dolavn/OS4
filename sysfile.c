@@ -176,6 +176,21 @@ sys_gettag(void)
 }
 
 int
+sys_setoffset(void)
+{
+  struct file *f;
+  uint off;
+
+  if(argfd(0, 0, &f) < 0)
+    return -1;
+  if(argint(1, &off) < 0){
+    return -1;
+  }
+  setoffset(f, off);
+  return 0;
+}
+
+int
 sys_close(void)
 {
   int fd;

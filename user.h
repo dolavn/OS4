@@ -28,6 +28,7 @@ int readlink(const char*,char*,size_t);
 int ftag(int,const char*,const char*);
 int funtag(int,const char*);
 int gettag(int,const char*,char*);
+void setoffset(struct file*, uint);
 
 // ulib.c
 int stat(char*, struct stat*);

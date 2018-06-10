@@ -949,3 +949,9 @@ get_inode_from_fd(int fd){
   struct proc* p = myproc();
   return p->ofile[fd]->ip;
 }
+
+void
+setoffset(struct file* f, uint off) {
+  f->off = off;
+  return;
+}
