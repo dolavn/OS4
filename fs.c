@@ -204,7 +204,7 @@ ialloc(uint dev, short type)
     if(dip->type == 0){  // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
-      dip->tag_block = balloc(dev);
+      dip->tag_block = 0;
       log_write(bp);   // mark it allocated on the disk
       brelse(bp);
       return iget(dev, inum);
@@ -709,9 +709,6 @@ static struct inode*
 namex(char *path, int nameiparent, char *name, int ref_count)
 {
   struct inode *ip, *next;
-  //uint dereferences = ref_count;
-  //char buffer[100];
-  //char namei[DIRSIZ];
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
@@ -722,26 +719,6 @@ namex(char *path, int nameiparent, char *name, int ref_count)
     if(!(ip=dereferencelink(ip))){
       return 0;
     }
-    /*
-    if(ip->type == T_SLINK){
-      cprintf("symbolic link\n");
-      if (dereferences--) {
-        if (getlinktarget(ip, buffer, ip->size) != 0) { //ip = target
-          cprintf("readlink error\n");
-          return 0;
-        }
-        iunlockput(ip);
-        if (!(ip = namex(buffer, 0, namei, dereferences))){
-          cprintf("bad symlink\n");
-          return 0;
-        }
-        ilock(ip);
-      }
-      else {
-        cprintf("too many dereferences\n");
-        return 0;
-      }
-    }*/
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;
@@ -839,6 +816,7 @@ int
 funtag(int fd,const char* key){
   struct inode* ip = get_inode_from_fd(fd);
   ilock(ip);
+  if(!ip->tag_block){iunlock(ip);return -1;}
   struct buf* b = bread(ip->dev, ip->tag_block);
   remove_tag(b, key);
   defragment_tags(b);
@@ -853,6 +831,7 @@ gettag(int fd,const char* key,char* buf){
   struct inode* ip = get_inode_from_fd(fd);
   int ans=0;
   ilock(ip);
+  if(!ip->tag_block){iunlock(ip);return -1;}
   struct buf* b = bread(ip->dev, ip->tag_block);
   int offset = look_for(b,key,strlen(key)+1,0,1);
   if(offset==-1){ans=-1;goto ret;}
@@ -870,6 +849,7 @@ int
 printtags(int fd){
   struct inode* ip = get_inode_from_fd(fd);
   ilock(ip);
+  if(!ip->tag_block){iunlock(ip);return 0;}
   struct buf* b = bread(ip->dev, ip->tag_block);
   cprintf("addr:%p\n",ip->tag_block);
   for(int i=0;i<BSIZE;++i){
@@ -925,6 +905,12 @@ set_tag(struct inode* in, const char* key, const char* value){
   char* end_delimeter = "\0\0";
   char buf_copy[BSIZE];
   ilock(in);
+  if(!in->tag_block){
+    begin_op();
+    in->tag_block = balloc(in->dev);
+    iupdate(in);
+    end_op();
+  }
   b = bread(in->dev, in->tag_block); //b is locked
   memmove(buf_copy,b->data,BSIZE);
   remove_tag(b, key);

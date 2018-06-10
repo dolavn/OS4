@@ -75,6 +75,9 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
       *p++ = '/';
     }
     dir = (char**)(malloc(sizeof(char*)*2*((st.size/sizeof(de))+1)));
+    for(int i=0;i<2*((st.size/sizeof(de))+1);++i){
+      dir[i] = 0;
+    }
     curr = dir;
     while(read(fd, &de, sizeof(de)) == sizeof(de)){
       if(de.inum == 0){
@@ -91,15 +94,13 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
     close(fd);
     for(curr=dir;*curr;curr=curr+2){
       if(*(curr+1) && !(strcmp(*(curr+1),".")==0 || strcmp(*(curr+1),"..")==0)){
-        printf(2,"before rec %s\n", *(curr+1));
         rec_search(criteria, *curr, *(curr+1));
-        printf(2,"after rec\n");
       }
-      printf(2,"freeing %p\n",*curr);
-      free(*curr);
-      *curr = 0;
-      *(curr+1) = 0;
-      printf(2,"freed\n");
+      if(*curr){
+        free(*curr);
+        *curr = 0;
+        *(curr+1) = 0;
+      }
     }
     free(dir);
     dir = 0;
