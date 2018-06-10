@@ -432,7 +432,6 @@ itrunc(struct inode *ip)
   int i, j;
   struct buf *bp;
   uint *a;
-
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
@@ -827,30 +826,58 @@ dereferencelink(struct inode* ip){
 int
 ftag(int fd,const char* key, const char* value){
   struct inode* ip = get_inode_from_fd(fd);
+  if(strlen(key)>TAGKEY_MAX_LEN){
+    return -1;
+  }
+  if(strlen(value)>TAGVAL_MAX_LEN){
+    return -1;
+  }
   return set_tag(ip, key, value);
 }
 
 int
 funtag(int fd,const char* key){
   struct inode* ip = get_inode_from_fd(fd);
+  ilock(ip);
   struct buf* b = bread(ip->dev, ip->tag_block);
   remove_tag(b, key);
   defragment_tags(b);
+  bwrite(b);
   brelse(b);
+  iunlock(ip);
   return 0;
 }
 
 int
 gettag(int fd,const char* key,char* buf){
   struct inode* ip = get_inode_from_fd(fd);
+  int ans=0;
+  ilock(ip);
   struct buf* b = bread(ip->dev, ip->tag_block);
   int offset = look_for(b,key,strlen(key)+1,0,1);
-  if(offset==-1){brelse(b);return -1;}
+  if(offset==-1){ans=-1;goto ret;}
   offset = offset + strlen(key) + 1;
   int value_len = strlen((char*)(b->data+offset));
   buf[0]=0;
-  memmove(buf,b->data+offset,value_len);
+  memmove(buf,b->data+offset,value_len+1);
+ret:
   brelse(b);
+  iunlock(ip);
+  return ans;
+}
+
+int
+printtags(int fd){
+  struct inode* ip = get_inode_from_fd(fd);
+  ilock(ip);
+  struct buf* b = bread(ip->dev, ip->tag_block);
+  cprintf("addr:%p\n",ip->tag_block);
+  for(int i=0;i<BSIZE;++i){
+    cprintf("%d ",b->data[i]);
+  }
+  cprintf("\n");
+  brelse(b);
+  iunlock(ip);
   return 0;
 }
 
@@ -897,6 +924,7 @@ set_tag(struct inode* in, const char* key, const char* value){
   int offset;
   char* end_delimeter = "\0\0";
   char buf_copy[BSIZE];
+  ilock(in);
   b = bread(in->dev, in->tag_block); //b is locked
   memmove(buf_copy,b->data,BSIZE);
   remove_tag(b, key);
@@ -906,11 +934,14 @@ set_tag(struct inode* in, const char* key, const char* value){
   if((offset = insert_to_data(key, b, offset))<0){goto error;}
   if((offset = insert_to_data(value, b, offset))<0){goto error;}
   if((offset = insert_to_data(end_delimeter, b, offset))<0){goto error;}
+  bwrite(b);
   brelse(b);
+  iunlock(in);
   return 0;
 error:
   memmove(b->data,buf_copy,BSIZE);
   brelse(b);
+  iunlock(in);
   return -1;
 }
 

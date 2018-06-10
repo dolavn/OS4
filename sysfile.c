@@ -139,8 +139,7 @@ sys_ftag(void)
   if(argptr(2, (char**)(&value), sizeof(char*)) < 0){
     return -1;
   }
-  ftag(fd,key,value);
-  return 0;
+  return ftag(fd,key,value);
 }
 
 int
@@ -173,6 +172,17 @@ sys_gettag(void)
     return -1;
   }
   return gettag(fd,key,buf);
+}
+
+int
+sys_printtags(void)
+{
+  int fd;
+  if(argint(0, &fd) < 0){
+    return -1;
+  }
+  printtags(fd);
+  return 0;
 }
 
 int

@@ -42,6 +42,7 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
   int fd;
   char* p = path+strlen(path);
   char* new_path = 0;
+  char** dir; char** curr;
   struct stat st;
   struct dirent de;
   if((fd = open(path, O_IGN_SLINK)) < 0) {
@@ -53,6 +54,7 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
     close(fd);
     return;
   }
+  printf(2,"hey\n");
   if(criteria->follow && st.type==T_SLINK){
     new_path = (char*)(malloc(sizeof(char)*512));
     readlink(path,new_path,512);
@@ -73,17 +75,37 @@ rec_search(struct search_criteria* criteria, char* path, char* name){
     if(*(p-1)!='/'){
       *p++ = '/';
     }
+    dir = (char**)(malloc(sizeof(char*)*2*((st.size/sizeof(de))+1)));
+    curr = dir;
     while(read(fd, &de, sizeof(de)) == sizeof(de)){
       if(de.inum == 0)
         continue;
-      if(strcmp(de.name,".")==0 || strcmp(de.name,"..")==0){
+      memmove(p, de.name, DIRSIZ);
+      *curr = (char*)(malloc(sizeof(char)*(strlen(path)+1)));
+      printf(2,"malloc %d\n",curr-dir);
+      memmove(*curr,path,strlen(path)+1);
+      curr++;
+      *curr = *(curr-1)+(p-path);
+      printf(2,"%s\n",*curr);
+      curr++;
+      p[DIRSIZ] = 0;
+    }
+    close(fd);
+    for(curr=dir;*curr;curr=curr+2){
+      printf(2,"curr:%d\n",curr-dir);
+      //printf(2,"p:%p\ncurr:%s\n",*curr,*curr);
+      if(strcmp(*(curr+1),".")==0 || strcmp(*(curr+1),"..")==0){
         continue;
       }
-      memmove(p, de.name, DIRSIZ);
-      p[DIRSIZ] = 0;
-      rec_search(criteria, path, p);
+      rec_search(criteria, *curr, *(curr+1));
+      free(*curr);
+      *curr = 0;
+      *(curr+1) = 0;
     }
+    free(dir);
+    dir = 0;
   }
+  
   if(new_path){
     free(new_path);
     path = 0;
@@ -108,7 +130,7 @@ checkTests(struct search_criteria* sc, struct stat* st, int fd, char* name) {
     if (gettag(fd, sc->key, tval) < 0) {
       tagTest = 0;
     }
-    else if (strcmp(sc->value, "?") || strcmp(sc->value, tval)) tagTest = 1;
+    else if (strcmp(sc->value, "?")==0 || strcmp(sc->value, tval)==0) tagTest = 1;
     else tagTest = 0;
   }
   else tagTest = 1;

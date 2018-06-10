@@ -108,6 +108,7 @@ extern int sys_readlink(void);
 extern int sys_ftag(void);
 extern int sys_funtag(void);
 extern int sys_gettag(void);
+extern int sys_printtags(void);
 extern int sys_setoffset(void);
 
 
@@ -138,6 +139,7 @@ static int (*syscalls[])(void) = {
 [SYS_ftag]    sys_ftag,
 [SYS_funtag]  sys_funtag,
 [SYS_gettag]  sys_gettag,
+[SYS_printtags] sys_printtags,
 [SYS_setoffset] sys_setoffset,
 };
 

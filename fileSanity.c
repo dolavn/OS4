@@ -13,27 +13,6 @@ char buffer[BLOCK_SIZE];
 
 int main(int argc, char** argv){
     int fd = open("testFile",O_CREATE | O_RDWR);
-    int b;
-    char v[100];
-    ftag(fd,"name","eyal");
-    ftag(fd,"family-name","katz-talmon");
-    ftag(fd,"hobby","swimming");
-    ftag(fd,"empty-entry","");
-    ftag(fd,"os-partner","dolav");
-    funtag(fd,"name");
-    funtag(fd,"hobby");
-    funtag(fd,"os-partner");
-    ftag(fd,"after-empty","hello");
-    ftag(fd,"family-name","katz-talmono");
-    funtag(fd,"after-empty");
-    ftag(fd,"hobby","swimming-guitar");
-    b = gettag(fd,"family-name",v);
-    printf(2,"%s\n%d\n",v,b);   
-    b = gettag(fd,"hobby",v);
-    printf(2,"%s\n%d\n",v,b); 
-    b = gettag(fd,"empty-entry",v);
-    printf(2,"%s\n%d\n",v,b); 
-    exit();
     printf(2,"Writing to direct blocks\n");
     for(int i=0;i<DIRECT_BLOCKS;++i){
         if(write(fd,buffer,BLOCK_SIZE)<0){
