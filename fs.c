@@ -51,7 +51,7 @@ bzero(int dev, int bno)
 }
 
 // Blocks.
-
+int nalloc = 0;
 // Allocate a zeroed disk block.
 static uint
 balloc(uint dev)
@@ -67,6 +67,7 @@ balloc(uint dev)
       if((bp->data[bi/8] & m) == 0){  // Is block free?
         bp->data[bi/8] |= m;  // Mark block in use.
         log_write(bp);
+        nalloc++;
         brelse(bp);
         bzero(dev, b + bi);
         return b + bi;
@@ -74,6 +75,7 @@ balloc(uint dev)
     }
     brelse(bp);
   }
+  cprintf("num allocated:%d\n",nalloc);
   panic("balloc: out of blocks");
 }
 
@@ -92,6 +94,7 @@ bfree(int dev, uint b)
     panic("freeing free block");
   bp->data[bi/8] &= ~m;
   log_write(bp);
+  nalloc--;
   brelse(bp);
 }
 
@@ -401,18 +404,21 @@ bmap(struct inode *ip, uint bn)
   bn -= NINDIRECT;
 
   if(bn < NDINDIRECT){
-    if((addr = ip->addrs[NDIRECT+1]) == 0)
-      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+    if((addr = ip->addrs[NDIRECT+1]) == 0){
+      ip->addrs[NDIRECT+1] = addr = balloc(ip->dev);
+    }
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn/NINDIRECT]) == 0){
       a[bn/NINDIRECT] = addr = balloc(ip->dev);
+      log_write(bp);
     }
     brelse(bp);
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn%NINDIRECT]) == 0){
       a[bn%NINDIRECT] = addr = balloc(ip->dev);
+      log_write(bp);
     }
     brelse(bp);
     return addr;
@@ -431,6 +437,7 @@ itrunc(struct inode *ip)
 {
   int i, j;
   struct buf *bp;
+  uint buf[BSIZE];
   uint *a;
   for(i = 0; i < NDIRECT; i++){
     if(ip->addrs[i]){
@@ -450,28 +457,29 @@ itrunc(struct inode *ip)
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
   }
-
   if(ip->addrs[NDIRECT+1]){
     bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
     a = (uint*)bp->data;
+    memmove(buf, bp->data, BSIZE);
     brelse(bp);
-    uint* second_level;
     for(j=0; j<NINDIRECT; ++j){
-      if(a[j]){
-        bp = bread(ip->dev, a[j]);
-        second_level = (uint*)(bp->data);
+      if(buf[j]){
+        bp = bread(ip->dev, buf[j]);
+        a = (uint*)(bp->data);
         for(i=0; i<NINDIRECT; ++i){
-          if(second_level[i]){
-            bfree(ip->dev, second_level[i]);
+          if(a[i]){
+            bfree(ip->dev, a[i]);
           }
         }
         brelse(bp);
-        bfree(ip->dev, a[j]);
+        bfree(ip->dev, buf[j]);
       }
     }
     bfree(ip->dev, ip->addrs[NDIRECT+1]);
   }
-  bfree(ip->dev, ip->tag_block);
+  if(ip->tag_block){
+    bfree(ip->dev, ip->tag_block);
+  }
   ip->size = 0;
   iupdate(ip);
 }
