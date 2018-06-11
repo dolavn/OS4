@@ -724,7 +724,7 @@ namex(char *path, int nameiparent, char *name, int ref_count)
 
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
-    if(!(ip=dereferencelink(ip))){
+    if(!(ip=dereferencelink(ip,&ref_count))){
       return 0;
     }
     if(ip->type != T_DIR){
@@ -788,18 +788,19 @@ issymlink(struct inode* ip){
 }
 
 struct inode*
-dereferencelink(struct inode* ip){
+dereferencelink(struct inode* ip, int* dereference){
   struct inode* ans = ip;
-  int dereference = MAX_DEREFERENCE;
   char buffer[100];
+  char name[DIRSIZ];
   while(ans->type == T_SLINK){
-    if(!dereference--){
+    *dereference = *dereference - 1;
+    if(!(*dereference)){
       iunlockput(ans);
       return 0;
     }
     getlinktarget(ans, buffer, ans->size);
     iunlockput(ans);
-    ans = namei(buffer);
+    ans = namex(buffer, 0, name, *dereference);
     if(!ans){
       return 0;
     }

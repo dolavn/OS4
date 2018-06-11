@@ -18,6 +18,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
+  int dereference = MAX_DEREFERENCE;
 
   begin_op();
 
@@ -27,7 +28,7 @@ exec(char *path, char **argv)
     return -1;
   }
   ilock(ip);
-  if(!(ip = dereferencelink(ip))){
+  if(!(ip = dereferencelink(ip,&dereference))){
     end_op();
     cprintf("exec: fail\n");
     return -1;

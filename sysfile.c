@@ -398,6 +398,7 @@ sys_open(void)
 {
   char *path;
   int fd, omode;
+  int dereference = MAX_DEREFERENCE;
   struct file *f;
   struct inode *ip;
 
@@ -425,7 +426,7 @@ sys_open(void)
     }
   }
   if (!(omode & O_IGN_SLINK)) {
-    if(!(ip = dereferencelink(ip))){
+    if(!(ip = dereferencelink(ip,&dereference))){
       return -1;
     }
   }
@@ -490,6 +491,7 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
   struct proc *curproc = myproc();
+  int dereference = MAX_DEREFERENCE;
 
   begin_op();
   if(argstr(0, &path) < 0 || (ip = namei(path)) == 0){
@@ -497,7 +499,7 @@ sys_chdir(void)
     return -1;
   }
   ilock(ip);
-  if(!(ip=dereferencelink(ip))){
+  if(!(ip=dereferencelink(ip,&dereference))){
     end_op();
     return -1;
   }
