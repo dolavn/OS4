@@ -19,7 +19,6 @@ int main(int argc, char** argv){
             exit();
         }
     }
-    setoffset(fd,0);
     printf(2,"Finished writing to direct blocks\n");
     printf(2,"Writing to indirect blocks\n");
     for(int i=0;i<INDIRECT_BLOCKS;++i){
@@ -27,7 +26,6 @@ int main(int argc, char** argv){
             exit();
         }
     }
-    setoffset(fd,0);
     printf(2,"Finished writing to indirect blocks\n");
     printf(2,"Writing to double indirect blocks\n");
     for(int i=0;i<DINDIRECT_BLOCKS;++i){
