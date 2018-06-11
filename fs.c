@@ -845,6 +845,7 @@ gettag(int fd,const char* key,char* buf){
   if(offset==-1){ans=-1;goto ret;}
   offset = offset + strlen(key) + 1;
   int value_len = strlen((char*)(b->data+offset));
+  ans = value_len;
   buf[0]=0;
   memmove(buf,b->data+offset,value_len+1);
 ret:
